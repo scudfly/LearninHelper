@@ -75,7 +75,7 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
 
   // 修改判断视频是否加载完成的函数
   function isVideoLoaded() {
-    const videoElement = document.querySelector('.pv-video-wrap #vjs_video_3');
+    const videoElement = document.querySelector('.pv-video-wrap .video-js');
     const durationElement = document.querySelector('.pv-time-duration');
     const duration = durationElement?.textContent.trim();
 
@@ -99,7 +99,7 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
     }
 
     const playButton = document.querySelector('.pv-controls-left button.pv-iconfont');
-    const videoElement = document.querySelector('.pv-video-wrap #vjs_video_3');
+    const videoElement = document.querySelector('.pv-video-wrap .video-js');
     const durationElement = document.querySelector('.pv-time-duration');
     const duration = durationElement?.textContent.trim();
     
