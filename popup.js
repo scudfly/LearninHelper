@@ -6,14 +6,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     defaultSpeed = '1', 
     autoPlay = false,
     autoNext = false,
-    removeWatermark = false 
+    removeWatermark = false,
+    timeMultiplier = '1',
+    autoMute = false 
   } = await chrome.storage.sync.get([
     'autoClose', 
     'defaultQuality', 
     'defaultSpeed', 
     'autoPlay',
     'autoNext',
-    'removeWatermark'
+    'removeWatermark',
+    'timeMultiplier',
+    'autoMute'
   ]);
   
   document.getElementById('autoClose').checked = autoClose;
@@ -22,6 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('defaultQuality').value = defaultQuality;
   document.getElementById('defaultSpeed').value = defaultSpeed;
   document.getElementById('removeWatermark').checked = removeWatermark;
+  document.getElementById('timeMultiplier').value = timeMultiplier;
+  document.getElementById('autoMute').checked = autoMute;
 });
 
 // 监听 switch 变化
@@ -57,6 +63,17 @@ document.getElementById('autoNext').addEventListener('change', async (e) => {
 // 添加水印移除开关的监听
 document.getElementById('removeWatermark').addEventListener('change', async (e) => {
   await chrome.storage.sync.set({ removeWatermark: e.target.checked });
+  updateContentScript();
+});
+
+// 添加静音选项的保存逻辑
+document.getElementById('autoMute').addEventListener('change', async (e) => {
+  await chrome.storage.sync.set({ autoMute: e.target.checked });
+});
+
+// 添加学习时长倍数选择的监听
+document.getElementById('timeMultiplier').addEventListener('change', async (e) => {
+  await chrome.storage.sync.set({ timeMultiplier: e.target.value });
   updateContentScript();
 });
 

@@ -1,5 +1,5 @@
 // 初始化时获取设置
-chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPlay', 'autoNext', 'removeWatermark'], (result) => {
+chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPlay', 'autoNext', 'removeWatermark', 'autoMute', 'timeMultiplier'], async (result) => {
   // 添加全局变量声明
   let playCheckInterval = null;
   let lastPlayTime = '';
@@ -10,8 +10,22 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
     defaultSpeed: result.defaultSpeed || '1',
     autoPlay: result.autoPlay || false,
     autoNext: result.autoNext || false,
-    removeWatermark: result.removeWatermark || false
+    removeWatermark: result.removeWatermark || false,
+    timeMultiplier: result.timeMultiplier || '1',
+    autoMute: result.autoMute || false
   };
+
+  // 根据静音设置来设置标签页静音状态
+  chrome.runtime.sendMessage({ 
+    action: 'setTabMute', 
+    muted: settings.autoMute 
+  }, (response) => {
+    if (response?.success) {
+      console.log(`标签页静音状态已设置为: ${settings.autoMute}`);
+    } else {
+      console.error('设置标签页静音失败:', response?.error);
+    }
+  });
 
   // 添加一个变量来记录上次执行时间
   let lastAutoPlayTime = 0;
@@ -224,7 +238,8 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
           const targetSeconds = convertTimeToSeconds(targetTime);
           const currentSeconds = convertTimeToSeconds(currentTime);
           
-          if (currentSeconds >= targetSeconds) {
+          // 当前时长超过目标时长乘以倍数时跳转
+          if (currentSeconds >= targetSeconds * Number(settings.timeMultiplier)) {
             // 如果是最后一节，停止所有操作
             if (isLastChapter()) {
               console.log('已到达课程末尾，停止所有操作');
@@ -316,8 +331,35 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
 
   let watermarkObserver = null;
 
+  // 修改静音功能
+  async function setMute() {
+    if (!settings.autoMute) return;
+
+    try {
+      // 直接设置音量条高度为0
+      const volumeCurrent = document.querySelector('.pv-volume-current');
+      if (!volumeCurrent) return;
+      
+      volumeCurrent.style.height = '0%';
+
+      // 模拟点击音量滑块以触发音量更新
+      const volumeTarget = document.querySelector('.pv-volume-target');
+      if (!volumeTarget) return;
+
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      volumeTarget.dispatchEvent(clickEvent);
+
+    } catch (error) {
+      console.error('静音设置失败:', error);
+    }
+  }
+
   // 修改 videoObserver
-  const videoObserver = new MutationObserver((mutations, obs) => {
+  const videoObserver = new MutationObserver(async (mutations, obs) => {
     // 首先检查签到图标，这个功能独立于视频
     findAndClickIcon();
 
@@ -344,6 +386,7 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
     
     // 检查并自动播放视频
     if (isVideoLoaded()) {
+      await setMute();  // 等待静音操作完成
       autoPlayVideo();
       // 独立启动自动下一节监控
       if (settings.autoNext) {
