@@ -104,14 +104,9 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
   }
 
   // 修改自动播放功能
-  function autoPlayVideo() {
-    const currentTime = Date.now();
-    // 检查是否距离上次执行超过3秒
-    if (currentTime - lastAutoPlayTime < 3000) {
-      console.log('距离上次自动播放不足3秒，跳过本次执行');
-      return false;
-    }
+  let autoPlayInterval = null;  // 添加新的定时器变量
 
+  function autoPlayVideo() {
     const playButton = document.querySelector('.pv-controls-left button.pv-iconfont');
     const videoElement = document.querySelector('.pv-video-wrap .video-js');
     const durationElement = document.querySelector('.pv-time-duration');
@@ -124,8 +119,6 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
       if (settings.autoPlay) {
         playButton.click();
         console.log('已点击播放按钮');
-        // 更新最后执行时间
-        lastAutoPlayTime = currentTime;
         startPlayCheck();
       } else {
         console.log('自动播放已禁用');
@@ -133,10 +126,30 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
       return true;
     }
     
-    if (playButton) {
-      console.log('播放按钮已出现但视频尚未完全准备好');
-    }
     return false;
+  }
+
+  // 添加启动自动播放定时器的函数
+  function startAutoPlayInterval() {
+    // 清除可能存在的旧定时器
+    if (autoPlayInterval) {
+      clearInterval(autoPlayInterval);
+    }
+    
+    // 创建新的定时器，每2秒执行一次
+    autoPlayInterval = setInterval(() => {
+      if (settings.autoPlay) {
+        autoPlayVideo();
+      }
+    }, 2000);
+  }
+
+  // 添加停止自动播放定时器的函数
+  function stopAutoPlayInterval() {
+    if (autoPlayInterval) {
+      clearInterval(autoPlayInterval);
+      autoPlayInterval = null;
+    }
   }
 
   // 修改播放监控功能
@@ -387,7 +400,7 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
     // 检查并自动播放视频
     if (isVideoLoaded()) {
       await setMute();  // 等待静音操作完成
-      autoPlayVideo();
+      startAutoPlayInterval();  // 启动自动播放定时器
       // 独立启动自动下一节监控
       if (settings.autoNext) {
         startCompletionCheck();
@@ -403,6 +416,7 @@ chrome.storage.sync.get(['autoClose', 'defaultQuality', 'defaultSpeed', 'autoPla
       if (isVideoLoaded() && !settings.autoPlay && !settings.autoNext && !settings.removeWatermark) {
         obs.disconnect();
         // 清理定时器
+        stopAutoPlayInterval();  // 停止自动播放定时器
         if (playCheckInterval) {
           clearInterval(playCheckInterval);
         }
