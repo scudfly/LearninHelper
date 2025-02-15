@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "正在学助手",
-  "version": "1.1",
+  "version": "1.2",
   "description": "为正在学平台提供自动播放、自动签到、清晰度调节、倍速播放等功能增强",
   "icons": {
     "48": "icon.png"
